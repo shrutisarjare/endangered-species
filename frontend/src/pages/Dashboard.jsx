@@ -40,9 +40,10 @@ export default function Dashboard() {
       AI-powered models to identify and track endangered species worldwide.
     </p>
     <div className="flex justify-center gap-4">
-      <Link to="/region" className="bg-yellow-400 text-black px-5 py-2 rounded hover:bg-yellow-300 transition text-sm">
-        Identify a Species
-      </Link>
+ <Link to="/identify" className="bg-yellow-400 text-black px-5 py-2 rounded hover:bg-yellow-300 transition text-sm">
+  Identify a Species
+</Link>
+
       <Link to="/region" className="bg-yellow-400 text-black px-5 py-2 rounded hover:bg-yellow-300 transition text-sm">
         Explore Species Database
       </Link>
