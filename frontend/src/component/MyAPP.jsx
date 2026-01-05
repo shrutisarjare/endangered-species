@@ -5,7 +5,7 @@ import HowItWorks from "./components/HowItWorks";
 import Species from "./components/Species";
 import Contact from "./components/Contact";
 
-function App() {
+function MYApp() {
   return (
     <>
       <Navbar />
@@ -18,4 +18,4 @@ function App() {
   );
 }
 
-export default App;
+export default MYApp;
