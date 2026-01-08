@@ -1,9 +1,9 @@
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import Features from "./components/Features";
-import HowItWorks from "./components/HowItWorks";
-import Species from "./components/Species";
-import Contact from "./components/Contact";
+import Navbar from "./navbar";
+import Hero from "./hero";
+import Features from "./features";
+import HowItWork from "./howItWork";
+import Contact from "./contact";
+import Species from "./species";
 
 function MYApp() {
   return (
@@ -11,7 +11,7 @@ function MYApp() {
       <Navbar />
       <Hero />
       <Features />
-      <HowItWorks />
+      <HowItWork />
       <Species />
       <Contact />
     </>
@@ -19,3 +19,4 @@ function MYApp() {
 }
 
 export default MYApp;
+

@@ -1,4 +1,4 @@
-import MyApp from "./pages/MyApp";
+import MyAPP from "./component/MyAPP.jsx";
 import { Routes, Route } from "react-router-dom"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
