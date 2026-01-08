@@ -1,3 +1,4 @@
+import MYAPP from "./components/MyApp"
 import { Routes, Route } from "react-router-dom"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/region" element={<Region />} />
       <Route path="/pan-india" element={<PanIndia />} />
       <Route path="/pan-india/land" element={<PanIndiaLand />} />
+      <MyApp />
     </Routes>
   )
 }
