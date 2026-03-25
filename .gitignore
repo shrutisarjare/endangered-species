@@ -1,0 +1,26 @@
+# Node
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+
+# Build folders
+dist/
+build/
+__pycache__/
+*.pyc
+database/dataset/
+
+venv/
+ml-service/venv/
+__pycache__/
+*.pyc
+venv/
+ml-service/venv/
+__pycache__/
+*.pyc
+*.csv
