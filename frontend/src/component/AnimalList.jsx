@@ -2,8 +2,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const AnimalList = () => {
+  
+  const params = useParams();
 
-  const { state, animal } = useParams();
+const region = params.region;
+const category = params.category;
+const state = params.state;
+const animal = params.animal;
   const navigate = useNavigate();
 
   const [animals, setAnimals] = useState([]);
@@ -11,42 +16,78 @@ const AnimalList = () => {
 
   useEffect(() => {
 
-    if (!state || !animal) return;
+    const fetchAnimals = async () => {
 
-    const formattedState = encodeURIComponent(state.toLowerCase());
-    const formattedAnimal = animal.toLowerCase();
+      try {
 
-    fetch(`http://127.0.0.1:8000/animal/${formattedState}/${formattedAnimal}`)
-      .then(res => res.json())
-      .then(data => { 
+        // ✅ FINAL FIX: safe cleaning
+        const cleanAnimal = (animal || "").toLowerCase().trim();
 
-        if (Array.isArray(data)) {
-          const uniqueAnimals = Array.from(
-            new Map(data.map(item => [item.name, item])).values()
-          );
-          setAnimals(uniqueAnimals);
-        } else {
+        if (!cleanAnimal) {
           setAnimals([]);
+          setLoading(false);
+          return;
         }
 
-        setLoading(false);
+        let url = "";
 
-      })
-      .catch(err => {
+        // 🔥 DETECTION FLOW (FIXED)
+        if (!region) {
+          url = `http://localhost:8000/search/${cleanAnimal}`;
+        }
 
-        console.error("Fetch error:", err);
+        // 🟢 NAVIGATION FLOW (UNCHANGED)
+        else {
+
+          if (!region || !category || !state) {
+            setAnimals([]);
+            setLoading(false);
+            return;
+          }
+
+          const formattedState = encodeURIComponent(state.toLowerCase());
+
+          url = `http://localhost:8000/animal/${region}/${category}/${formattedState}/${cleanAnimal}`;
+        }
+
+        console.log("🚀 CALLING:", url);
+
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          console.error("❌ API ERROR:", res.status);
+          setAnimals([]);
+          return;
+        }
+
+        const data = await res.json();
+
+        console.log("📦 DATA:", data);
+
+        // ✅ FINAL FIX: always ensure array
+        setAnimals(Array.isArray(data) ? data : []);
+
+      } catch (err) {
+        console.error("❌ FETCH ERROR:", err);
         setAnimals([]);
+      } finally {
         setLoading(false);
+      }
 
-      });
+    };
 
-  }, [state, animal]);
+    fetchAnimals();
+
+  }, [region, category, state, animal]);
 
 
+  // 🔥 LOADING
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen text-xl">
-        Loading animals...
+      <div className="min-h-screen flex justify-center items-center text-xl">
+        <div className="animate-pulse text-gray-600">
+          Loading animals...
+        </div>
       </div>
     );
   }
@@ -57,10 +98,13 @@ const AnimalList = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-gray-100 py-12 px-6">
 
       <h1 className="text-4xl font-bold text-center text-green-700 mb-12 capitalize">
-        {animal} in {state}
+        {region === "all"
+          ? `All ${animal}`
+          : `${animal} in ${state}`}
       </h1>
 
-      {animals.length === 0 ? (
+      {/* ✅ FINAL FIX: safe condition */}
+      {!animals || animals.length === 0 ? (
 
         <div className="flex flex-col items-center justify-center text-center mt-20">
 
@@ -71,7 +115,7 @@ const AnimalList = () => {
           />
 
           <p className="text-xl text-gray-600 font-medium">
-            No data found for {animal} in {state}
+            No data found for {animal} {region === "all" ? "" : `in ${state}`}
           </p>
 
           <p className="text-gray-500 mt-2">
@@ -87,27 +131,40 @@ const AnimalList = () => {
           {animals.map((item, index) => (
 
             <div
-              key={index}
-              onClick={() =>
-                navigate(`/species-info/${item.name.toLowerCase()}`)
-              }
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 transition duration-300 cursor-pointer"
+              key={item.name + index}
+              onClick={() => {
+
+  // 🟢 DETECTION FLOW (no region)
+  if (!region) {
+    navigate(`/species/${item.name}`, {
+      state: item
+    });
+  }
+
+  // 🔵 EXPLORE FLOW (full params)
+  else {
+    navigate(`/species-info/${region}/${category}/${state}/${animal}`);
+  }
+
+}}
+              className="bg-white rounded-2xl shadow-md overflow-hidden 
+                         hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             >
 
-              <img
-                src={`https://source.unsplash.com/600x400/?${encodeURIComponent(item.name)}%20animal`}
-                alt={item.name}
-                className="h-56 w-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = `https://picsum.photos/600/400?random=${index}`
-
-                }}
-              />
+              <div className="w-full h-48 bg-gray-200 overflow-hidden">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-opacity duration-500 opacity-0"
+                  onLoad={(e) => e.target.style.opacity = 1}
+                  onError={(e) => e.target.style.display = "none"}
+                />
+              </div>
 
               <div className="p-6">
 
-                <h2 className="text-xl font-bold text-green-700">
+                <h2 className="text-xl font-bold text-green-700 capitalize">
                   {item.name}
                 </h2>
 

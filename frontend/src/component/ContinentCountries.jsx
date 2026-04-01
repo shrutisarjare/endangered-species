@@ -1,46 +1,68 @@
-import { Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
-const continents = [
-  "Asia",
-  "Africa",
-  "Europe",
-  "North America",
-  "South America",
-  "Australia / Oceania",
-  "Antarctica",
-];
+const ContinentCountries = () => {
 
-const Continents = () => {
+  const { continentName } = useParams();   // ✅ from URL
+  const navigate = useNavigate();
+
+  const categories = [
+    {
+      key: "terrestrial",
+      label: "🦌 Terrestrial",
+      description: "Explore land species",
+      bgColor: "bg-green-100",
+    },
+    {
+      key: "aquatic",
+      label: "🐟 Aquatic",
+      description: "Explore water species",
+      bgColor: "bg-blue-100",
+    },
+    {
+      key: "aerial",
+      label: "🦅 Aerial",
+      description: "Explore flying species",
+      bgColor: "bg-yellow-100",
+    },
+  ];
+
+  const handleClick = (category) => {
+
+    // ✅ IMPORTANT: region = global
+    navigate(`/species/global/${continentName}/${category}`);
+
+  };
+
   return (
     <div
-      className="min-h-screen bg-cover bg-center px-10 py-16 text-white"
+      className="min-h-screen bg-cover bg-center flex items-center justify-center px-6 py-16"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa')",
+          "linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/hero.png')",
       }}
     >
-      <h1 className="text-4xl font-bold text-center mb-6">
-        🌍 Select a Continent
-      </h1>
 
-      <p className="text-center max-w-3xl mx-auto mb-12 text-gray-200">
-        Explore biodiversity-rich regions across the world’s continents
-      </p>
+      <div className="flex flex-col md:flex-row gap-6 bg-white/20 backdrop-blur-md p-10 rounded-2xl shadow-xl">
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-        {continents.map((continent) => (
-          <Link
-            key={continent}
-            to={`/continent/${continent}`}
-            className="bg-white/90 backdrop-blur text-green-800 p-6 rounded-2xl shadow-xl 
-                       hover:scale-105 transition text-center font-semibold text-lg"
+        {categories.map((cat) => (
+          <div
+            key={cat.key}
+            onClick={() => handleClick(cat.key)}
+            className={`${cat.bgColor} p-6 rounded-xl w-60 text-center shadow cursor-pointer
+                         hover:scale-105 transition`}
           >
-            {continent}
-          </Link>
+            <h2 className="text-green-700 font-bold text-xl mb-2">
+              {cat.label}
+            </h2>
+
+            <p>{cat.description}</p>
+          </div>
         ))}
+
       </div>
+
     </div>
   );
 };
 
-export default Continents;
+export default ContinentCountries;

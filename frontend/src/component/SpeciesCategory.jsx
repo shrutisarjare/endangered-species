@@ -44,6 +44,7 @@ const speciesData = {
     description: "Animals that fly in the air.",
     animals: [
       "Eagle",
+      "Bird",
       "Vulture",
       "Parrot",
       "Sparrow",
@@ -61,7 +62,8 @@ const speciesData = {
 
 const SpeciesCategory = () => {
 
-  const { state, category } = useParams();
+  // ✅ IMPORTANT: include region
+  const { region, state, category } = useParams();
   const navigate = useNavigate();
 
   const data = speciesData[category?.toLowerCase()];
@@ -77,9 +79,9 @@ const SpeciesCategory = () => {
 
     const animalSlug = animal.toLowerCase();
 
-    // navigate with STATE + ANIMAL
-    navigate(`/animal/${state}/${animalSlug}`);
-
+    // ✅ FINAL CORRECT NAVIGATION
+    const cleanState = state.toLowerCase().replace(/[^a-z\s]/g, "").trim();
+   navigate(`/animal/${region}/${category}/${cleanState}/${animalSlug}`);
   };
 
   return (

@@ -30,7 +30,7 @@ const IndiaStates = () => {
         {states.map((state) => (
           <Link
             key={state}
-            to={`/state/${state}`}
+            to={`/state/${state.toLowerCase()}`}
             className="bg-white/90 backdrop-blur text-green-800 p-4 rounded-xl shadow-lg
                        hover:scale-105 transition text-center font-medium"
           >

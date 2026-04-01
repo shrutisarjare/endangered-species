@@ -70,15 +70,51 @@ const Navbar = () => {
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
 
-            {/* Menu */}
-            <ul className="flex flex-col gap-4 text-gray-700">
-              <li className="cursor-pointer hover:text-green-700">👤 Profile</li>
-              <li className="cursor-pointer hover:text-green-700">✏️ Edit Profile</li>
-              <li className="cursor-pointer hover:text-green-700">📜 History</li>
-              <li className="cursor-pointer hover:text-green-700">❤️ Favourites</li>
-              <li className="cursor-pointer hover:text-green-700">🧠 Quiz</li>
-              <li className="cursor-pointer hover:text-green-700">⚙️ Settings</li>
-            </ul>
+           <ul className="flex flex-col gap-4 text-gray-700">
+
+  <li
+    onClick={() => { navigate("/profile"); setOpen(false); }}
+    className="cursor-pointer hover:text-green-700"
+  >
+    👤 Profile
+  </li>
+
+  <li
+    onClick={() => { navigate("/edit-profile"); setOpen(false); }}
+    className="cursor-pointer hover:text-green-700"
+  >
+    ✏️ Edit Profile
+  </li>
+
+  <li
+    onClick={() => { navigate("/history"); setOpen(false); }}
+    className="cursor-pointer hover:text-green-700"
+  >
+    📜 History
+  </li>
+
+  <li
+    onClick={() => { navigate("/favourites"); setOpen(false); }}
+    className="cursor-pointer hover:text-green-700"
+  >
+    ❤️ Favourites
+  </li>
+
+  <li
+    onClick={() => { navigate("/quiz"); setOpen(false); }}
+    className="cursor-pointer hover:text-green-700"
+  >
+    🧠 Quiz
+  </li>
+
+  <li
+    onClick={() => { navigate("/settings"); setOpen(false); }}
+    className="cursor-pointer hover:text-green-700"
+  >
+    ⚙️ Settings
+  </li>
+
+</ul>
 
             {/* Logout */}
             <button

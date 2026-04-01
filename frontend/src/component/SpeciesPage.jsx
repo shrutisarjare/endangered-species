@@ -8,242 +8,349 @@ import {
   CartesianGrid
 } from "recharts";
 
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const SpeciesPage = () => {
 
-  const { name } = useParams();
+  // ✅ params
+  const { region, category, state, animal } = useParams();
+  const location = useLocation();
+
+  const detectionData = location.state;
 
   const [data, setData] = useState(null);
   const [chartData, setChartData] = useState([]);
-  const [info, setInfo] = useState(null);
 
+  const [regionType, setRegionType] = useState("india");
+  const [selectedLocation, setSelectedLocation] = useState("");
+
+  // 🔥 NEW: dynamic locations
+  const [locations, setLocations] = useState([]);
+
+  // =============================
+  // 📊 BUILD CHART
+  // =============================
+  const buildChart = (result) => {
+    
+
+    const years = [2014, 2016, 2018, 2020, 2022, 2024];
+
+    let history = [];
+
+    if (
+      Array.isArray(result.population_history) &&
+      typeof result.population_history[0] === "number"
+    ) {
+      history = result.population_history.map((val, i) => ({
+        year: years[i],
+        population: Number(val) || 0,
+      }));
+    } else {
+      history = (result.population_history || []).map(item => ({
+        year: item.year,
+        population: Number(item.population) || 0,
+      }));
+    }
+
+    const predictions = (result.predictions || []).map(p => ({
+      year: p.year,
+      population: Number(p.population) || 0,
+    }));
+
+    setChartData([...history, ...predictions]);
+  };
+
+  // =============================
+  // 🔁 MAIN LOAD
+  // =============================
   useEffect(() => {
 
-    fetch(`http://127.0.0.1:8000/analysis/${name}`)
+    // 🟢 DETECTION FLOW
+    if (detectionData) {
+
+      const animalName = detectionData.name || detectionData.species;
+      
+      const history = JSON.parse(localStorage.getItem("history")) || [];
+
+// avoid duplicates (optional)
+const updatedHistory = [animalName, ...history.filter(item => item !== animalName)];
+
+localStorage.setItem("history", JSON.stringify(updatedHistory.slice(0, 10)));
+
+      // main data
+      fetch(`http://127.0.0.1:8000/detection/${animalName}`)
+        .then(res => res.json())
+        .then(result => {
+
+          if (result.error) {
+            setData({ error: result.error });
+            return;
+          }
+
+          setData(result);
+          buildChart(result);
+        });
+
+      // 🔥 NEW: fetch locations
+      fetch(`http://127.0.0.1:8000/detection-locations/${animalName}/${regionType}`)
+        .then(res => res.json())
+        .then(result => {
+          setLocations(result || []);
+        });
+
+      return;
+    }
+
+
+    // 🔵 EXPLORE FLOW
+    if (region && category && state && animal) {
+      // ✅ SAVE HISTORY (explore flow)
+const history = JSON.parse(localStorage.getItem("history")) || [];
+const updatedHistory = [animal, ...history.filter(item => item !== animal)];
+localStorage.setItem("history", JSON.stringify(updatedHistory.slice(0, 10)));
+
+      fetch(`http://127.0.0.1:8000/analysis/${region}/${category}/${state}/${animal}`)
+        .then(res => res.json())
+        .then(result => {
+
+          if (result.error) {
+            setData({ error: result.error });
+            return;
+          }
+
+          setData(result);
+          buildChart(result);
+        });
+    }
+
+  }, [region, category, state, animal, detectionData, regionType]);
+
+  // =============================
+  // 🟢 DROPDOWN CHANGE
+  // =============================
+  const handleDropdownChange = (value) => {
+
+    setSelectedLocation(value);
+
+    const animalName = detectionData.name || detectionData.species;
+
+    fetch(`http://127.0.0.1:8000/detection/${animalName}/${regionType}/${value}`)
       .then(res => res.json())
       .then(result => {
 
+        if (result.error) {
+          setData({ error: result.error });
+          return;
+        }
+
         setData(result);
+        buildChart(result);
+      });
+  };
 
-        const history = result.population_history || [];
-        const predictions = result.predictions || [];
+  // =============================
+  // 🔄 REGION CHANGE
+  // =============================
+  const handleRegionChange = (value) => {
 
-        const combined = [...history, ...predictions];
+    setRegionType(value);
+    setSelectedLocation("");
 
-        setChartData(combined);
+    const animalName = detectionData.name || detectionData.species;
 
-      })
-      .catch(err => {
-        console.error("Fetch error:", err);
+    // 🔥 fetch new locations
+    fetch(`http://127.0.0.1:8000/detection-locations/${animalName}/${value}`)
+      .then(res => res.json())
+      .then(result => {
+        setLocations(result || []);
       });
 
-  }, [name]);
+    // reload base data
+    fetch(`http://127.0.0.1:8000/detection/${animalName}`)
+      .then(res => res.json())
+      .then(result => {
 
-  if (!data || !data.population_history)
+        if (result.error) {
+          setData({ error: result.error });
+          return;
+        }
+
+        setData(result);
+        buildChart(result);
+      });
+  };
+
+  // =============================
+  // ⏳ LOADING / ERROR
+  // =============================
+  if (!data) {
     return (
       <div className="flex justify-center items-center h-screen text-xl">
-        Loading species data...
+        Loading...
       </div>
     );
+  }
+
+  if (data.error) {
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500 text-xl">
+        Error: {data.error}
+      </div>
+    );
+  }
 
   const currentPopulation =
-    data.population_history[data.population_history.length - 1]?.population || 0;
+    Array.isArray(data.population_history) &&
+    typeof data.population_history[0] === "number"
+      ? data.population_history[data.population_history.length - 1]
+      : data.population_history?.[data.population_history.length - 1]?.population || "N/A";
 
+  // =============================
+  // 🎨 UI
+  // =============================
   return (
+    <div className="min-h-screen bg-gray-100 p-10">
 
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-gray-100 py-12 px-6">
+      <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow">
 
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-10">
+        {/* HEADER */}
+        <div className="flex gap-10 items-center">
 
-        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <img
+            src={data.image}
+            alt={data.species}
+            className="w-60 h-44 object-cover rounded-lg"
+          />
 
           <div>
-
-            <h1 className="text-4xl font-bold text-green-700 mb-2">
+            <h1 className="text-3xl font-bold text-green-700">
               {data.species}
             </h1>
+            <button
+  onClick={() => {
+    const fav = JSON.parse(localStorage.getItem("favourites")) || [];
 
-            <p className="text-gray-500 italic mb-6">
+    const animalName = data.animal_name;
+
+    if (!fav.includes(animalName)) {
+      fav.push(animalName);
+      localStorage.setItem("favourites", JSON.stringify(fav));
+      alert("Added to favourites ❤️");
+    } else {
+      alert("Already in favourites");
+    }
+  }}
+  className="mt-4 bg-yellow-500 px-4 py-2 rounded"
+>
+  ❤️ Add to Favourites
+</button>
+
+            <p className="italic text-gray-500">
               {data.scientific_name}
             </p>
 
-            <div className="space-y-3 text-gray-700">
-
-              <p>
-                <span className="font-semibold">Location:</span> {data.state}
-              </p>
-
-              <p>
-                <span className="font-semibold">Population:</span> {currentPopulation}
-              </p>
-
-              <p>
-                <span className="font-semibold">Status:</span> {data.risk_level || "Unknown"}
-              </p>
-
-            </div>
-
-          </div>
-
-          <div className="flex justify-center">
-
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg"
-              alt={data.species}
-              className="w-64 h-64 object-cover rounded-xl shadow-md"
-            />
-
+            <p className="mt-2">Location: {data.state}</p>
+            <p>Population: {currentPopulation}</p>
+            <p>Status: {data.risk_level}</p>
           </div>
 
         </div>
 
+        {/* 🟢 DROPDOWN */}
+        {detectionData && (
+          <div className="mt-6 flex gap-4">
 
-        <div className="grid md:grid-cols-3 gap-6 mt-12">
-
-          <div className="relative bg-green-100 p-6 rounded-xl shadow">
-
-            <button
-              className="absolute top-3 right-3 text-gray-600"
-              onClick={() => setInfo("trend")}
+            <select
+              value={regionType}
+              onChange={(e) => handleRegionChange(e.target.value)}
+              className="border p-2 rounded"
             >
-              ℹ
-            </button>
+              <option value="india">India</option>
+              <option value="panasia">Pan Asia</option>
+              <option value="global">Global</option>
+            </select>
 
-            {info === "trend" && (
+            <select
+              value={selectedLocation}
+              onChange={(e) => handleDropdownChange(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option value="">Select Location</option>
 
-              <div className="absolute -top-20 right-0 bg-white p-4 rounded-lg shadow-lg text-sm w-60">
+              {/* 🔥 dynamic locations */}
+              {locations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
 
-                <button
-                  className="absolute top-1 right-2 text-gray-500"
-                  onClick={() => setInfo(null)}
-                >
-                  ✕
-                </button>
+            </select>
 
-                Population trend shows whether the species population is increasing, stable, or declining.
+          </div>
+        )}
 
-              </div>
+        {/* CARDS */}
+        <div className="grid grid-cols-3 gap-6 mt-10">
 
+          <div className="bg-green-100 p-4 rounded">
+            <h3>Trend</h3>
+            <p className="text-xl">{data.trend || "N/A"}</p>
+          </div>
+
+          <div className="bg-blue-100 p-4 rounded">
+            <h3>Predictions</h3>
+
+            {(data.predictions || []).length > 0 ? (
+              data.predictions.map(p => (
+                <p key={p.year}>
+                  {p.year}: {Math.round(p.population)}
+                </p>
+              ))
+            ) : (
+              <p>No prediction data</p>
             )}
-
-            <h3 className="font-semibold">Trend</h3>
-
-            <p className="text-xl mt-2">{data.trend || "Unknown"}</p>
 
           </div>
 
-
-          <div className="relative bg-blue-100 p-6 rounded-xl shadow">
-
-            <button
-              className="absolute top-3 right-3 text-gray-600"
-              onClick={() => setInfo("prediction")}
-            >
-              ℹ
-            </button>
-
-            {info === "prediction" && (
-
-              <div className="absolute -top-20 right-0 bg-white p-4 rounded-lg shadow-lg text-sm w-60">
-
-                <button
-                  className="absolute top-1 right-2 text-gray-500"
-                  onClick={() => setInfo(null)}
-                >
-                  ✕
-                </button>
-
-                Estimated future population predicted using machine learning.
-
-              </div>
-
-            )}
-
-            <h3 className="font-semibold">Estimated Population</h3>
-
-            {(data.predictions || []).map(p => (
-              <p key={p.year}>
-                {p.year} → {p.population}
-              </p>
-            ))}
-
-          </div>
-
-
-          <div className="relative bg-red-100 p-6 rounded-xl shadow">
-
-            <button
-              className="absolute top-3 right-3 text-gray-600"
-              onClick={() => setInfo("risk")}
-            >
-              ℹ
-            </button>
-
-            {info === "risk" && (
-
-              <div className="absolute -top-20 right-0 bg-white p-4 rounded-lg shadow-lg text-sm w-60">
-
-                <button
-                  className="absolute top-1 right-2 text-gray-500"
-                  onClick={() => setInfo(null)}
-                >
-                  ✕
-                </button>
-
-                Risk level indicates the extinction threat of the species.
-
-              </div>
-
-            )}
-
-            <h3 className="font-semibold">Risk Level</h3>
-
-            <p className="text-xl mt-2">{data.risk_level || "Unknown"}</p>
-
+          <div className="bg-red-100 p-4 rounded">
+            <h3>Risk</h3>
+            <p className="text-xl">{data.risk_level}</p>
           </div>
 
         </div>
 
+        {/* CHART */}
+        {chartData.length > 0 && (
+          <div className="mt-10">
 
-        <div className="mt-12 bg-gray-50 p-6 rounded-xl shadow">
+            <h2 className="text-xl font-semibold mb-4">
+              Population Trend (2014–2024 + Prediction)
+            </h2>
 
-          <h2 className="text-2xl font-semibold mb-4">
-            Population Trend & Prediction
-          </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3"/>
+                <XAxis dataKey="year"/>
+                <YAxis/>
+                <Tooltip/>
 
-          <ResponsiveContainer width="100%" height={350}>
+                <Line
+                  type="monotone"
+                  dataKey="population"
+                  stroke="#16a34a"
+                  strokeWidth={3}
+                />
+              </LineChart>
+            </ResponsiveContainer>
 
-            <LineChart data={chartData}>
-
-              <CartesianGrid strokeDasharray="3 3"/>
-
-              <XAxis dataKey="year"/>
-
-              <YAxis/>
-
-              <Tooltip/>
-
-              <Line
-                type="monotone"
-                dataKey="population"
-                stroke="#16a34a"
-                strokeWidth={3}
-              />
-
-            </LineChart>
-
-          </ResponsiveContainer>
-
-        </div>
+          </div>
+        )}
 
       </div>
 
     </div>
-
   );
-
 };
 
 export default SpeciesPage;

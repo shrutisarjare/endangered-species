@@ -13,36 +13,40 @@ const continents = [
 const Continents = () => {
   return (
     <div
-      className="min-h-screen bg-cover bg-center flex items-center justify-center px-6"
+      className="min-h-screen bg-cover bg-center px-10 py-16 text-white"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://images.unsplash.com/photo-1472214103451-9374bd1c798e')",
+          "linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://images.unsplash.com/photo-1451187580459-43490279c0fa')",
       }}
     >
-      <div className="w-full max-w-5xl bg-white/10 backdrop-blur-md rounded-3xl p-10 shadow-2xl">
-        
-        <h1 className="text-4xl font-bold text-center text-white mb-4">
-          🌍 Select a Continent
-        </h1>
+      <h1 className="text-4xl font-bold text-center mb-6">
+        🌍 Select a Continent
+      </h1>
 
-        <p className="text-center text-gray-200 mb-10">
-          Discover biodiversity across continents and explore endangered species
-        </p>
+      <p className="text-center max-w-3xl mx-auto mb-12 text-gray-200">
+        Explore biodiversity-rich regions across the world’s continents
+      </p>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-          {continents.map((continent) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        {continents.map((continent) => {
+
+          // ✅ FIX: convert to clean slug
+          const slug = continent
+            .toLowerCase()
+            .replace(/\s*\/\s*/g, "_")   // Australia / Oceania → australia_oceania
+            .replace(/\s+/g, "_");       // North America → north_america
+
+          return (
             <Link
               key={continent}
-              to={`/continent/${continent}`}
-              className="bg-white/90 text-green-800 p-6 rounded-2xl shadow-lg
-                         hover:scale-105 hover:bg-green-50 transition
-                         text-center font-semibold text-lg"
+              to={`/continent/${slug}`}   // ✅ FIXED
+              className="bg-white/90 backdrop-blur text-green-800 p-6 rounded-2xl shadow-xl 
+                         hover:scale-105 transition text-center font-semibold text-lg"
             >
               {continent}
             </Link>
-          ))}
-        </div>
-
+          );
+        })}
       </div>
     </div>
   );

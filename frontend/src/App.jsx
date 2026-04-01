@@ -27,6 +27,12 @@ import Register from "./component/Register";
 
 import FeatureDetails from "./component/FeatureDetails";
 
+import Profile from "./component/Profile";
+import EditProfile from "./component/EditProfile";
+import History from "./component/History";
+import Favourites from "./component/Favourites";
+import Quiz from "./component/Quiz";
+import Settings from "./component/Settings";
 
 /* =======================
    HOME PAGE
@@ -63,16 +69,18 @@ export default function App() {
       <Route path="/india" element={<IndiaStates />} />
 
       {/* Select State */}
-      <Route path="/state/:stateName" element={<StateCategories />} />
+      <Route path="/state/:state" element={<StateCategories />} />
 
       {/* Select Animal inside State */}
-      <Route path="/species/:state/:category" element={<SpeciesCategory />} />
+      <Route path="/species/:region/:state/:category" element={<SpeciesCategory />} />
 
       {/* Show Animals */}
-      <Route path="/animal/:state/:animal" element={<AnimalList />} />
-
+      <Route path="/detect/:animal" element={<AnimalList />} />
+      <Route path="/animal/:region/:category/:state/:animal" element={<AnimalList />} />
+     
       {/* FINAL SPECIES PAGE */}
-      <Route path="/species-info/:name" element={<SpeciesPage />} />
+      <Route path="/species-info/:region/:category/:state/:animal" element={<SpeciesPage />} />
+      <Route path="/species/:name" element={<SpeciesPage />} />
 
       {/* ASIA FLOW */}
       <Route path="/asia" element={<AsiaCountries />} />
@@ -88,6 +96,14 @@ export default function App() {
       {/* AUTH */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      {/* ✅ ADD HERE (ONLY THIS PART NEW) */}
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/edit-profile" element={<EditProfile />} />
+      <Route path="/history" element={<History />} />
+      <Route path="/favourites" element={<Favourites />} />
+      <Route path="/quiz" element={<Quiz />} />
+      <Route path="/settings" element={<Settings />} />
 
     </Routes>
   );

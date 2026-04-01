@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 
 const StateCategories = () => {
-  const { stateName, countryName } = useParams(); 
+  const { state, countryName } = useParams(); 
   const navigate = useNavigate();
 
   const categories = [
@@ -26,9 +26,14 @@ const StateCategories = () => {
   ];
 
   const handleClick = (category) => {
-    const location = stateName || countryName;
-    navigate(`/species/${location}/${category}`);
-  };
+  const location = state || countryName;
+
+  // detect region automatically
+  let region = "india";
+  if (countryName) region = "panasia";
+  const cleanLocation = location.replace(/[^a-zA-Z\s]/g, "").trim();
+  navigate(`/species/${region}/${cleanLocation}/${category}`);
+};
 
   return (
     <div

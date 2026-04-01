@@ -117,7 +117,7 @@ const Identify = () => {
       if (description.trim() !== "") {
 
         const response = await fetch(
-          "http://localhost:5001/api/identify/text",
+          "http://127.0.0.1:8000/identify-text",
           {
             method: "POST",
             headers: {
@@ -148,10 +148,14 @@ const Identify = () => {
         );
 
         const data = await response.json();
+
         setResult(data.species);
+
+        // AUTO NAVIGATION
+        navigate(`/detect/${data.species.toLowerCase()}`);
       }
 
-      // VIDEO INPUT
+      // VIDEO INPUT ✅ UPDATED
       else if (videoFile) {
 
         const formData = new FormData();
@@ -166,7 +170,11 @@ const Identify = () => {
         );
 
         const data = await response.json();
+
         setResult(data.species);
+
+        // 🔥 ADDED (same as image)
+        navigate(`/detect/${data.species.toLowerCase()}`);
       }
 
       // AUDIO INPUT
@@ -284,7 +292,7 @@ const Identify = () => {
 
             <div className="mt-3">
               <button
-                onClick={() => navigate(`/species/${result}`)}
+               onClick={() => navigate(`/detect/${result.toLowerCase()}`)}
                 className="bg-green-700 text-white px-3 py-1 rounded"
               >
                 View About
