@@ -13,15 +13,35 @@ export default function Register() {
 
   const handleRegister = async () => {
     try {
+      setError("");
+
+      // 🔥 Trim values
+      const trimmedName = name.trim();
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+
+      // 🔥 Required validation
+      if (!trimmedName || !trimmedEmail || !trimmedPassword) {
+        setError("All fields are required");
+        return;
+      }
+
+      // 🔥 Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        setError("Invalid email format");
+        return;
+      }
+
       const res = await fetch("http://localhost:5001/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          email,
-          password,
+          name: trimmedName,
+          email: trimmedEmail,
+          password: trimmedPassword,
           role,
         }),
       });
@@ -32,7 +52,7 @@ export default function Register() {
         throw new Error(data.message || "Registration failed");
       }
 
-      // ✅ SUCCESS → redirect to login
+      alert("Registration successful!");
       navigate("/login");
 
     } catch (err) {
@@ -63,6 +83,7 @@ export default function Register() {
           type="text"
           placeholder="Username"
           className="w-full p-3 mb-4 border rounded-lg"
+          value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
@@ -70,6 +91,7 @@ export default function Register() {
           type="email"
           placeholder="Email"
           className="w-full p-3 mb-4 border rounded-lg"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
@@ -77,11 +99,13 @@ export default function Register() {
           type="password"
           placeholder="Password"
           className="w-full p-3 mb-4 border rounded-lg"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <select
           className="w-full p-3 mb-6 border rounded-lg"
+          value={role}
           onChange={(e) => setRole(e.target.value)}
         >
           <option value="user">User</option>

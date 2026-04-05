@@ -1,5 +1,9 @@
+import { useNavigate } from "react-router-dom";
+import { User } from "lucide-react";
+
 const Profile = () => {
   const user = JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
 
   return (
     <div className="relative min-h-screen text-white">
@@ -15,19 +19,46 @@ const Profile = () => {
       <div className="absolute inset-0 bg-black/60 -z-10"></div>
 
       {/* Content */}
-      <div className="flex justify-center items-center h-screen">
-        <div className="backdrop-blur-xl bg-white/10 p-8 rounded-2xl border border-white/20 shadow-xl w-96">
+      <div className="flex justify-center items-center h-screen px-4">
 
-          <h1 className="text-2xl font-bold mb-6 text-center">👤 Profile</h1>
+        <div className="backdrop-blur-2xl bg-white/10 p-10 rounded-3xl border border-white/20 shadow-2xl w-full max-w-md text-center">
 
-          <p className="mb-2"><b>Name:</b> {user?.name || "Not set"}</p>
-          <p className="mb-4"><b>Email:</b> {user?.email}</p>
+          {/* Avatar */}
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center text-green-700 shadow-md">
+            <User size={36} />
+          </div>
 
-          <button className="w-full bg-green-600 py-2 rounded-lg hover:bg-green-700 transition">
+          {/* Title */}
+          <h1 className="text-3xl font-bold mb-6 tracking-wide">
+            Profile
+          </h1>
+
+          {/* Info */}
+          <div className="text-left space-y-3 mb-6">
+            <p className="text-lg">
+              <span className="text-gray-300">Name:</span>{" "}
+              <span className="font-semibold">{user?.name || "Not set"}</span>
+            </p>
+
+            <p className="text-lg">
+              <span className="text-gray-300">Email:</span>{" "}
+              <span className="font-semibold">{user?.email}</span>
+            </p>
+          </div>
+
+          {/* Button */}
+          <button
+            onClick={() => navigate("/edit-profile")}
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 
+                       py-3 rounded-xl font-semibold 
+                       hover:scale-105 hover:shadow-lg 
+                       transition-all duration-300"
+          >
             Edit Profile
           </button>
 
         </div>
+
       </div>
     </div>
   );

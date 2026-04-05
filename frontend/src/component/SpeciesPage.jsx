@@ -71,12 +71,9 @@ const SpeciesPage = () => {
 
       const animalName = detectionData.name || detectionData.species;
       
-      const history = JSON.parse(localStorage.getItem("history")) || [];
-
-// avoid duplicates (optional)
-const updatedHistory = [animalName, ...history.filter(item => item !== animalName)];
-
-localStorage.setItem("history", JSON.stringify(updatedHistory.slice(0, 10)));
+      fetch(`http://127.0.0.1:8000/history?animal=${animalName}`, {
+  method: "POST"
+});
 
       // main data
       fetch(`http://127.0.0.1:8000/detection/${animalName}`)
@@ -106,9 +103,9 @@ localStorage.setItem("history", JSON.stringify(updatedHistory.slice(0, 10)));
     // 🔵 EXPLORE FLOW
     if (region && category && state && animal) {
       // ✅ SAVE HISTORY (explore flow)
-const history = JSON.parse(localStorage.getItem("history")) || [];
-const updatedHistory = [animal, ...history.filter(item => item !== animal)];
-localStorage.setItem("history", JSON.stringify(updatedHistory.slice(0, 10)));
+fetch(`http://127.0.0.1:8000/history?animal=${animal}&source=explore`, {
+  method: "POST"
+});
 
       fetch(`http://127.0.0.1:8000/analysis/${region}/${category}/${state}/${animal}`)
         .then(res => res.json())
@@ -227,19 +224,20 @@ localStorage.setItem("history", JSON.stringify(updatedHistory.slice(0, 10)));
             <h1 className="text-3xl font-bold text-green-700">
               {data.species}
             </h1>
-            <button
+           <button
   onClick={() => {
-    const fav = JSON.parse(localStorage.getItem("favourites")) || [];
+    const animalName = data?.species; // ✅ correct field
 
-    const animalName = data.animal_name;
-
-    if (!fav.includes(animalName)) {
-      fav.push(animalName);
-      localStorage.setItem("favourites", JSON.stringify(fav));
-      alert("Added to favourites ❤️");
-    } else {
-      alert("Already in favourites");
-    }
+    fetch(`http://127.0.0.1:8000/favourites?animal=${animalName}`, {
+      method: "POST"
+    })
+      .then(res => res.json())
+      .then(() => {
+        alert("Added to favourites ❤️");
+      })
+      .catch(() => {
+        alert("Error adding favourite");
+      });
   }}
   className="mt-4 bg-yellow-500 px-4 py-2 rounded"
 >

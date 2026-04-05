@@ -1,14 +1,17 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Home } from "lucide-react";
 import { useState } from "react";
 import axios from "axios";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  const [role, setRole] = useState("user");
 
   const handleLogin = async () => {
     setError("");
@@ -24,7 +27,16 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       // ✅ Redirect to home
-      navigate("/");
+     const user = res.data.user;
+
+// 👑 Admin → go to dashboard
+if (user.role === "admin") {
+  navigate("/AdminDashboard");
+} else {
+  // 👤 User → go back to previous page OR home
+  const redirectPath = location.state?.from || "/";
+  navigate(redirectPath);
+}
 
     } catch (err) {
       if (err.response?.data?.message === "User not found. Please register first.") {
@@ -73,6 +85,14 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <select
+  className="w-full p-3 mb-6 border rounded-lg"
+  value={role}
+  onChange={(e) => setRole(e.target.value)}
+>
+  <option value="user">User</option>
+  <option value="admin">Admin</option>
+</select>
 
         <button
           type="button"

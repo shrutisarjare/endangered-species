@@ -34,6 +34,8 @@ import Favourites from "./component/Favourites";
 import Quiz from "./component/Quiz";
 import Settings from "./component/Settings";
 
+import AdminDashboard from "./component/AdminDashboard";
+
 /* =======================
    HOME PAGE
 ======================= */
@@ -76,7 +78,9 @@ export default function App() {
 
       {/* Show Animals */}
       <Route path="/detect/:animal" element={<AnimalList />} />
+      
       <Route path="/animal/:region/:category/:state/:animal" element={<AnimalList />} />
+
      
       {/* FINAL SPECIES PAGE */}
       <Route path="/species-info/:region/:category/:state/:animal" element={<SpeciesPage />} />
@@ -96,6 +100,9 @@ export default function App() {
       {/* AUTH */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      <Route path="/AdminDashboard" element={<AdminDashboard />} />
+ 
 
       {/* ✅ ADD HERE (ONLY THIS PART NEW) */}
       <Route path="/profile" element={<Profile />} />

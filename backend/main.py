@@ -2,6 +2,7 @@
 import os
 import requests
 from fastapi import FastAPI, File, UploadFile
+from fastapi import UploadFile, File
 import json
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -13,13 +14,20 @@ import tensorflow as tf
 import shutil
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
-
+from bson import ObjectId
+from fastapi import Body
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input, decode_predictions
 from tensorflow.keras.preprocessing import image
 import librosa
 import tensorflow_hub as hub
+from fastapi import HTTPException
 
 
+from pymongo import MongoClient
+
+client = MongoClient("mongodb://127.0.0.1:27017/")
+db = client["endangered"]
+users_collection = db["users"]
 # ================= GEO MAPPING =================
 
 # 🇮🇳 All Indian States → India
@@ -126,7 +134,11 @@ class TextInput(BaseModel):
 
 # ================= APP =================
 app = FastAPI()
+# ================= USER DATA (NEW) =================
+from datetime import datetime
 
+history_db = []
+favourites_db = []
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -248,6 +260,69 @@ def search_all_animals(animal):
 @app.get("/")
 def root():
     return {"message": "API running"}
+
+# ================= HISTORY =================
+@app.post("/history")
+@app.post("/history")
+def add_history(animal: str, source: str = "detection"):
+    entry = {
+        "name": animal,
+        "timestamp": datetime.now().isoformat(),
+        "source": source
+    }
+
+    global history_db
+    history_db = [h for h in history_db if h["name"] != animal]
+    history_db.insert(0, entry)
+
+    return {"message": "Added to history", "data": entry}
+
+
+@app.get("/history")
+def get_history():
+    return history_db
+
+
+# ================= FAVOURITES =================
+@app.post("/favourites")
+def add_favourite(animal: str):
+    if not any(f["name"] == animal for f in favourites_db):
+        favourites_db.append({
+            "name": animal,
+            "added_at": datetime.now().isoformat()
+        })
+
+    return {"message": "Added to favourites"}
+
+
+@app.get("/favourites")
+def get_favourites():
+    return favourites_db
+
+
+# ================= QUIZ =================
+import random
+
+@app.get("/quiz")
+def generate_quiz():
+    animals = list(set(
+        [h["name"] for h in history_db] +
+        [f["name"] for f in favourites_db]
+    ))
+
+    random.shuffle(animals)
+    selected = animals[:5]
+
+    questions = []
+
+    for animal in selected:
+        questions.append({
+            "question": f"What is the conservation status of {animal}?",
+            "options": ["Endangered", "Vulnerable", "Extinct", "Least Concern"],
+            "answer": "Endangered"
+        })
+
+    return questions
 
 # ================= IMAGE =================
 def predict_image(file):
@@ -715,3 +790,267 @@ def get_locations(animal: str, regionType: str):
         return sorted(list(continents))
 
     return []
+# ================= ADMIN APIs (FINAL FIXED) =================
+
+from fastapi import Body, HTTPException
+
+# ✅ GET ALL SPECIES
+@app.get("/admin/species")
+def get_all_species():
+    return all_animals_df.to_dict(orient="records")
+
+
+# ✅ GET SHEET (SAFE)
+@app.get("/admin/sheet/{region}/{category}")
+def get_sheet(region: str, category: str):
+
+    key = f"{region.lower().strip()}_{category.lower().strip()}"
+
+    if key not in dataframes:
+        print("❌ Sheet not found:", key)
+        return []   # ✅ NEVER crash frontend
+
+    df = dataframes[key]
+
+    return df.fillna("").to_dict(orient="records")  # ✅ prevent null crash
+
+
+# ✅ UPLOAD FULL EXCEL (SAFE RELOAD)
+@app.post("/admin/upload-excel")
+async def upload_excel(file: UploadFile = File(...)):
+
+    file_path = os.path.join(BASE_DIR, "data", "processed", "animals.xlsx")
+
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        global excel_data, all_animals_df, dataframes
+
+        excel_data = pd.read_excel(file_path, sheet_name=None)
+
+        # ✅ combined
+        all_animals_df = excel_data["all_animals"].copy()
+        all_animals_df.columns = all_animals_df.columns.str.strip()
+        all_animals_df["animal_name"] = all_animals_df["animal_name"].astype(str).str.strip().str.lower()
+        all_animals_df["animal_type"] = all_animals_df["animal_type"].astype(str).str.strip().str.lower()
+
+        # ✅ sheets
+        dataframes = {}
+
+        for sheet_name, df in excel_data.items():
+            df.columns = df.columns.str.strip()
+            df["state"] = df["state"].astype(str).str.strip().str.lower()
+            df["animal_type"] = df["animal_type"].astype(str).str.strip().str.lower()
+
+            dataframes[sheet_name.lower().strip()] = df
+
+        return {"message": "Excel replaced successfully ✅"}
+
+    except Exception as e:
+        print("❌ Upload Excel Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ✅ UPLOAD TO SHEET (SAFE)
+@app.post("/admin/upload/{region}/{category}")
+async def upload_to_sheet(region: str, category: str, file: UploadFile = File(...)):
+
+    key = f"{region.lower().strip()}_{category.lower().strip()}"
+
+    if key not in dataframes:
+        raise HTTPException(status_code=400, detail="Invalid sheet")
+
+    try:
+        df_new = pd.read_excel(file.file)
+
+        df_new.columns = df_new.columns.str.strip()
+        df_new["state"] = df_new["state"].astype(str).str.strip().str.lower()
+        df_new["animal_type"] = df_new["animal_type"].astype(str).str.strip().str.lower()
+
+        dataframes[key] = pd.concat([dataframes[key], df_new], ignore_index=True)
+
+        save_all_sheets()
+
+        return {"message": "Uploaded successfully ✅"}
+
+    except Exception as e:
+        print("❌ Upload Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ✅ DELETE (SAFE)
+@app.delete("/admin/delete/{region}/{category}/{animal}")
+def delete_species(region: str, category: str, animal: str):
+
+    key = f"{region.lower().strip()}_{category.lower().strip()}"
+
+    if key not in dataframes:
+        raise HTTPException(status_code=400, detail="Invalid sheet")
+
+    try:
+        df = dataframes[key]
+
+        print("Deleting:", animal)
+        print("Before:", len(df))
+
+        # 🔥 FLEXIBLE MATCH (better than exact eq)
+        df = df[
+            ~df["animal_name"]
+            .astype(str)
+            .str.lower()
+            .str.strip()
+            .str.contains(animal.lower().strip())
+        ]
+
+        print("After:", len(df))
+
+        dataframes[key] = df
+        save_all_sheets()
+
+        return {"message": f"{animal} deleted successfully ✅"}
+
+    except Exception as e:
+        print("❌ Delete Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ✅ UPDATE (SAFE + FLEXIBLE)
+@app.put("/admin/update/{region}/{category}/{animal}")
+def update_species(region: str, category: str, animal: str, updated_data: dict = Body(...)):
+
+    key = f"{region.lower().strip()}_{category.lower().strip()}"
+
+    if key not in dataframes:
+        raise HTTPException(status_code=400, detail="Invalid sheet")
+
+    try:
+        df = dataframes[key]
+
+        mask = df["animal_name"].astype(str).str.lower().str.strip() == animal.lower().strip()
+
+        if not mask.any():
+            raise HTTPException(status_code=404, detail="Animal not found")
+
+        for col, value in updated_data.items():
+            if col in df.columns:
+                df.loc[mask, col] = value
+
+        dataframes[key] = df
+        save_all_sheets()
+
+        return {"message": "Updated successfully ✅"}
+
+    except Exception as e:
+        print("❌ Update Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/admin/add/{region}/{category}")
+def add_species(region: str, category: str, data: dict):
+
+    file_path = os.path.join(BASE_DIR, "data", "processed", "animals.xlsx")
+    sheet_name = f"{region.lower().strip()}_{category.lower().strip()}"
+
+    df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+    print("Excel Columns:", df.columns.tolist())
+
+    new_row = {
+        "animal_name": data.get("animal_name"),
+        "animal_type": data.get("animal_type"),
+        "scientific_name": data.get("scientific_name"),
+        "state": data.get("state"),
+        "habitat_location": data.get("habitat_location"),
+
+        "population_2014": data.get("population_2014"),
+        "population_2016": data.get("population_2016"),
+        "population_2018": data.get("population_2018"),
+        "population_2020": data.get("population_2020"),
+        "population_2022": data.get("population_2022"),
+        "population_2024": data.get("population_2024"),
+
+        "status": data.get("status")
+    }
+
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+    with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    return {"message": "Added successfully"}
+# ✅ SAVE FUNCTION (SAFE WRITE)
+def save_all_sheets():
+    file_path = os.path.join(BASE_DIR, "data", "processed", "animals.xlsx")
+
+    try:
+        with pd.ExcelWriter(file_path, engine="openpyxl", mode="w") as writer:
+            for sheet_name, df in dataframes.items():
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    except Exception as e:
+        print("❌ Save Error:", e)
+
+
+
+from bson import ObjectId
+
+from bson import ObjectId
+from fastapi import HTTPException
+
+@app.put("/update-profile")
+def update_profile(data: dict = Body(...)):
+
+    try:
+        print("Incoming data:", data)   # 🔥 DEBUG
+
+        user_id = data.get("_id")
+
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID missing")
+
+        # 🔥 SAFE ObjectId conversion
+        try:
+            user_id = ObjectId(user_id)
+        except:
+            raise HTTPException(status_code=400, detail="Invalid user ID")
+
+        result = users_collection.update_one(
+            {"_id": user_id},
+            {
+                "$set": {
+                    "name": data.get("name"),
+                    "email": data.get("email")
+                }
+            }
+        )
+
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return {"message": "Profile updated successfully"}
+
+    except Exception as e:
+        print("❌ Update error:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+import bcrypt
+
+@app.post("/login")
+def login(data: dict = Body(...)):
+    
+    email = data.get("email")
+    password = data.get("password")
+
+    user = users_collection.find_one({"email": email})
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not bcrypt.checkpw(password.encode(), user["password"].encode()):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    return {
+        "user": {
+            "_id": str(user["_id"]),
+            "name": user["name"],
+            "email": user["email"]
+        }
+    }

@@ -249,20 +249,7 @@ const Identify = () => {
             className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
           />
 
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`p-2 rounded-lg ${
-              isRecording ? "bg-red-500 text-white animate-pulse" : "bg-green-600 text-white"
-            }`}
-          >
-            <Mic size={18} />
-          </button>
-
-          {isRecording && (
-            <button onClick={cancelRecording} className="p-2 bg-gray-500 text-white rounded-lg">
-              <X size={16} />
-            </button>
-          )}
+         
         </div>
 
         {imageFile && <p className="text-sm text-green-800">🖼 {imageFile.name}</p>}

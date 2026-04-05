@@ -100,7 +100,7 @@ const animal = params.animal;
       <h1 className="text-4xl font-bold text-center text-green-700 mb-12 capitalize">
         {region === "all"
           ? `All ${animal}`
-          : `${animal} in ${state}`}
+          : `${animal} `}
       </h1>
 
       {/* ✅ FINAL FIX: safe condition */}

@@ -1,5 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import {
+  User,
+  Pencil,
+  History,
+  Heart,
+  Brain,
+  Settings,
+  LogOut,
+  Menu
+} from "lucide-react";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -16,23 +26,24 @@ const Navbar = () => {
   return (
     <>
       {/* NAVBAR */}
-      <nav className="bg-green-700 text-white px-8 py-4 flex justify-between items-center">
+      <nav className="bg-green-700 text-white px-8 py-4 flex justify-between items-center shadow-md">
+        
         {/* Logo */}
-        <Link to="/" className="text-xl font-bold">
-          Endangered Species
+        <Link to="/" className="text-xl font-bold tracking-wide">
+           FaunaVision
         </Link>
 
         <ul className="flex gap-6 items-center">
-          <li className="cursor-pointer hover:text-yellow-300">Features</li>
-          <li className="cursor-pointer hover:text-yellow-300">How It Works</li>
-          <li className="cursor-pointer hover:text-yellow-300">Species</li>
-          <li className="cursor-pointer hover:text-yellow-300">Contact</li>
+          <li className="cursor-pointer hover:text-yellow-300 transition">Features</li>
+          <li className="cursor-pointer hover:text-yellow-300 transition">How It Works</li>
+          <li className="cursor-pointer hover:text-yellow-300 transition">Species</li>
+          <li className="cursor-pointer hover:text-yellow-300 transition">Contact</li>
 
           {!user ? (
             <li>
               <Link
                 to="/login"
-                className="border px-4 py-1 rounded hover:bg-white hover:text-green-700 transition"
+                className="border px-4 py-1 rounded-lg hover:bg-white hover:text-green-700 transition"
               >
                 Login
               </Link>
@@ -41,86 +52,83 @@ const Navbar = () => {
             <li>
               <button
                 onClick={() => setOpen(true)}
-                className="text-2xl focus:outline-none"
+                className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition"
               >
-                👤
+                <User size={20} />
               </button>
             </li>
           )}
         </ul>
       </nav>
 
-      {/* RIGHT SIDE PROFILE PANEL */}
+      {/* DRAWER */}
       {open && (
         <>
           {/* Overlay */}
           <div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
             onClick={() => setOpen(false)}
           ></div>
 
-          {/* Drawer */}
-          <div className="fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-xl p-6 flex flex-col">
-            
+          {/* Sidebar */}
+          <div className="fixed top-0 right-0 h-full w-80 bg-white z-50 shadow-2xl p-6 flex flex-col rounded-l-2xl transform transition-transform duration-300">
+
             {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-green-700">
-                {user.name}
-              </h2>
-              <p className="text-sm text-gray-500">{user.email}</p>
+            <div className="flex items-center gap-3 mb-8 border-b pb-4">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-700">
+                <User size={22} />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {user.name}
+                </h2>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
             </div>
 
-           <ul className="flex flex-col gap-4 text-gray-700">
+            {/* Menu */}
+            <ul className="flex flex-col gap-2 text-gray-700">
 
-  <li
-    onClick={() => { navigate("/profile"); setOpen(false); }}
-    className="cursor-pointer hover:text-green-700"
-  >
-    👤 Profile
-  </li>
+              {[
+                { name: "Profile", icon: User, path: "/profile" },
+              
+                { name: "History", icon: History, path: "/history" },
+                { name: "Favourites", icon: Heart, path: "/favourites" },
+                { name: "Quiz", icon: Brain, path: "/quiz" },
+                { name: "Settings", icon: Settings, path: "/settings" },
+              ].map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <li
+                    key={i}
+                    onClick={() => {
+                      navigate(item.path);
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer 
+                               hover:bg-green-50 hover:text-green-700 
+                               transition-all duration-200 group"
+                  >
+                    <Icon
+                      size={18}
+                      className="text-gray-500 group-hover:text-green-700"
+                    />
+                    <span className="font-medium">{item.name}</span>
+                  </li>
+                );
+              })}
 
-  <li
-    onClick={() => { navigate("/edit-profile"); setOpen(false); }}
-    className="cursor-pointer hover:text-green-700"
-  >
-    ✏️ Edit Profile
-  </li>
-
-  <li
-    onClick={() => { navigate("/history"); setOpen(false); }}
-    className="cursor-pointer hover:text-green-700"
-  >
-    📜 History
-  </li>
-
-  <li
-    onClick={() => { navigate("/favourites"); setOpen(false); }}
-    className="cursor-pointer hover:text-green-700"
-  >
-    ❤️ Favourites
-  </li>
-
-  <li
-    onClick={() => { navigate("/quiz"); setOpen(false); }}
-    className="cursor-pointer hover:text-green-700"
-  >
-    🧠 Quiz
-  </li>
-
-  <li
-    onClick={() => { navigate("/settings"); setOpen(false); }}
-    className="cursor-pointer hover:text-green-700"
-  >
-    ⚙️ Settings
-  </li>
-
-</ul>
+            </ul>
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="mt-auto bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg"
+              className="mt-auto flex items-center justify-center gap-2 
+                         bg-red-500 hover:bg-red-600 text-white py-2 rounded-xl 
+                         transition-all duration-200 shadow-md"
             >
+              <LogOut size={18} />
               Logout
             </button>
           </div>

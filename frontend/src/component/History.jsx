@@ -1,35 +1,66 @@
+import React, { useEffect, useState } from "react";
+
 const History = () => {
-  const history = JSON.parse(localStorage.getItem("history")) || [];
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/history")
+      .then(res => res.json())
+      .then(data => setHistory(data))
+      .catch(err => console.error("Error fetching history:", err));
+  }, []);
 
   return (
-    <div className="relative min-h-screen text-white">
+    <div
+      className="min-h-screen bg-cover bg-center relative p-10"
+      style={{
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1501785888041-af3ef285b470')"
+      }}
+    >
+      {/* 🔥 DARK OVERLAY */}
+      <div className="absolute inset-0 bg-black/70"></div>
 
-      <img
-        src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e"
-        className="absolute w-full h-full object-cover -z-10"
-        alt=""
-      />
+      <div className="relative">
+        <h1 className="text-4xl font-bold text-green-300 mb-8">
+          🕘 History
+        </h1>
 
-      <div className="absolute inset-0 bg-black/60 -z-10"></div>
-
-      <div className="p-8">
-        <h1 className="text-2xl mb-6">📜 History</h1>
-
-        <div className="space-y-3">
-          {history.length === 0 ? (
-            <p>No history yet</p>
-          ) : (
-            history.map((item, i) => (
+        {history.length === 0 ? (
+          <div className="flex items-center justify-center h-[60vh]">
+            <p className="text-gray-300 text-lg">No history yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {history.map((item, index) => (
               <div
-                key={i}
-                className="backdrop-blur-lg bg-white/10 p-4 rounded-xl"
+                key={index}
+                className="
+                  bg-white/10 
+                  backdrop-blur-xl 
+                  border border-white/10 
+                  p-6 
+                  rounded-2xl 
+                  shadow-lg 
+                  hover:scale-105 
+                  transition
+                "
               >
-                🐾 {item}
-              </div>
-            ))
-          )}
-        </div>
+                <h2 className="text-xl font-semibold text-green-300">
+                  {item.name}
+                </h2>
 
+                <p className="text-gray-400 text-sm mt-2">
+                  {new Date(item.timestamp).toLocaleString()}
+                </p>
+
+                <p className="text-sm mt-2 text-gray-300">
+                  Source: {item.source}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
